@@ -1,0 +1,190 @@
+/* Pastikan halaman bisa scroll normal */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f8f9fa;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh; /* Memastikan halaman minimal setinggi viewport */
+    overflow-x: hidden; /* Mencegah scroll horizontal */
+}
+
+/* Kontainer utama membiarkan elemen berkembang alami */
+.container {
+    width: 80%; /* Mengatur lebar kontainer lebih kecil, bisa sesuaikan */
+    max-width: 600px; /* Menentukan lebar maksimal kontainer */
+    padding: 20px;
+    box-sizing: border-box;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.1);
+    margin: 0 auto; /* Agar tetap di tengah */
+}
+
+.task-container {
+    width: 100%;
+    max-height: 70vh;  /* Batas tinggi maksimal */
+    overflow-y: auto;  /* Menampilkan scrollbar vertikal */
+    overflow-x: hidden; /* Menyembunyikan scrollbar horizontal */
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    background: #f9f9f9;
+}
+
+.task-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+h1 {
+    text-align: center;
+}
+
+.input-container {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+#searchTask {
+    flex-grow: 1;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+.task-filter {
+    margin-right: 10px;
+}
+
+.input-wrapper {
+    margin-bottom: 15px;
+}
+
+.input-wrapper label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+input, textarea {
+    width: 100%; /* Memastikan input dan textarea menggunakan 100% lebar kontainer */
+    padding: 8px;  /* Mengurangi padding agar lebih kecil */
+    margin: 5px 0;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-sizing: border-box; /* Memastikan padding masuk dalam perhitungan lebar */
+}
+
+textarea {
+    height: 80px; /* Mengurangi tinggi textarea agar tidak terlalu besar */
+}
+
+button {
+    padding: 10px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    margin-left: 10px;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #0056b3;
+}
+
+ul {
+    list-style: none;
+    padding: 0;
+}
+
+ul#taskList {
+    padding: 0;
+    list-style: none;
+}
+
+li {
+    display: flex;
+    flex-direction: column;
+    background: #ffffff;
+    padding: 15px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    margin-bottom: 15px;
+    transition: opacity 0.3s ease;
+}
+
+li.checked {
+    opacity: 0.5; /* Efek opacity ketika task dicentang */
+}
+
+li > input[type="checkbox"] {
+    order: -1; /* Memastikan checkbox selalu berada di paling kiri */
+    margin-right: 15px; /* Memberi jarak dengan elemen lainnya */
+    transform: scale(1.5); /* Memperbesar ukuran checkbox */
+}
+
+.task-title {
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.task-info {
+    display: flex;
+    justify-content: space-between; /* Tanggal dan waktu berjejer */
+    margin-bottom: 10px;
+}
+
+.task-desc {
+    word-break: break-word;
+    margin-top: 5px;
+}
+
+/* Modal Pop-up */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.4);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background-color: white;
+    padding: 20px;
+    border-radius: 10px;
+    width: 350px;  /* Menyesuaikan lebar modal agar input lebih pas */
+    box-sizing: border-box; /* Menghitung padding dalam lebar */
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.close {
+    float: right;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+.delete-task {
+    background: red;
+    border: none;
+    color: white;
+    font-size: 14px;  /* Ukuran kecil */
+    cursor: pointer;
+    padding: 2px;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: auto;  /* Agar rata kanan */
+}
+

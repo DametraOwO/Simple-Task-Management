@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Management</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>📋 Todos</h1>
+        <div class="input-container">
+            <!-- Dropdown untuk filter berdasarkan status -->
+            <select id="taskFilter" class="task-filter">
+                <option value="">Semua Task</option>
+                <option value="completed">Task Selesai</option>
+                <option value="not-completed">Task Belum Selesai</option>
+            </select>
+            <input type="text" id="searchTask" placeholder="Cari Judul Task">
+            <button id="openModal">+</button>
+        </div>              
+        <div class="task-container">
+            <ul id="taskList" class="task-list"></ul>
+        </div>
+    </div>    
+
+    <!-- Pop-up Form -->
+    <div id="taskModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Tambah Task Baru</h2>
+
+            <div class="input-wrapper">
+                <label for="taskTitle">Judul:</label>
+                <input type="text" id="taskTitle" placeholder="Masukkan judul task...">
+            </div>
+
+            <div class="input-wrapper">
+                <label for="taskDate">Deadline (Tanggal):</label>
+                <input type="date" id="taskDate">
+            </div>
+
+            <div class="input-wrapper">
+                <label for="taskTime">Deadline (Waktu):</label>
+                <input type="time" id="taskTime">
+            </div>
+
+            <div class="input-wrapper">
+                <label for="taskDesc">Deskripsi:</label>
+                <textarea id="taskDesc" placeholder="Masukkan deskripsi task..."></textarea>
+            </div>
+
+            <button onclick="submitTask()">Simpan</button>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
