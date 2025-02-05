@@ -1,4 +1,7 @@
-const API_URL = "/api/tasks";
+const DB_NAME = "TaskDB";
+const DB_VERSION = 1;
+let db;
+
 const modal = document.getElementById("taskModal");
 const openModalBtn = document.getElementById("openModal");
 const closeModalBtn = document.querySelector(".close");
@@ -9,129 +12,127 @@ const timeInput = document.getElementById("taskTime");
 const descInput = document.getElementById("taskDesc");
 const searchInput = document.getElementById("searchTask");
 const taskList = document.getElementById("taskList");
-
 const filterInput = document.getElementById("taskFilter");
 
-filterInput.addEventListener("change", function() {
-    const filterValue = this.value.toLowerCase();
-    const tasks = document.querySelectorAll("#taskList li");
+// Fungsi membuka database IndexedDB
+function openDatabase() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
 
-    tasks.forEach(task => {
-        const isCompleted = task.classList.contains("checked");
+        request.onupgradeneeded = function (event) {
+            let db = event.target.result;
+            if (!db.objectStoreNames.contains("tasks")) {
+                db.createObjectStore("tasks", { keyPath: "id", autoIncrement: true });
+            }
+        };
 
-        // Menyaring task berdasarkan status
-        if (filterValue === "" || 
-            (filterValue === "completed" && isCompleted) ||
-            (filterValue === "not-completed" && !isCompleted)) {
-            task.style.display = "flex"; // Tampilkan task yang sesuai dengan filter
-        } else {
-            task.style.display = "none"; // Sembunyikan task yang tidak sesuai
-        }
+        request.onsuccess = function (event) {
+            db = event.target.result;
+            resolve(db);
+        };
+
+        request.onerror = function (event) {
+            reject("Database error: " + event.target.errorCode);
+        };
     });
-});
-
-
-window.onload = function() {
-    modal.style.display = "none";
-};
-
-// Fungsi untuk membuka modal
-openModalBtn.onclick = function() {
-    modal.style.display = "flex";
-};
-
-// Fungsi untuk menutup modal & reset input
-function closeModal() {
-    modal.style.display = "none";
-    resetInputs();
 }
 
-// Klik tombol X menutup modal
-closeModalBtn.onclick = closeModal;
-
-// Klik di luar modal menutup modal
-window.onclick = function(event) {
-    if (event.target === modal) {
-        closeModal();
-    }
-};
-
-// Fungsi reset input setelah submit atau tutup modal
-function resetInputs() {
-    titleInput.value = "";
-    dateInput.value = "";
-    timeInput.value = "";
-    descInput.value = "";
+// Fungsi menambahkan task ke IndexedDB
+async function addTaskToDB(task) {
+    const db = await openDatabase();
+    const transaction = db.transaction("tasks", "readwrite");
+    const store = transaction.objectStore("tasks");
+    store.add(task);
 }
 
-// Fungsi menampilkan daftar task dengan format yang terurut
+// Fungsi mengambil semua task dari IndexedDB
+async function getTasksFromDB() {
+    const db = await openDatabase();
+    const transaction = db.transaction("tasks", "readonly");
+    const store = transaction.objectStore("tasks");
+    return new Promise((resolve, reject) => {
+        const request = store.getAll();
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject("Error fetching tasks");
+    });
+}
+
+// Fungsi menghapus task dari IndexedDB
+async function deleteTaskFromDB(taskId) {
+    const db = await openDatabase();
+    const transaction = db.transaction("tasks", "readwrite");
+    const store = transaction.objectStore("tasks");
+    store.delete(taskId);
+}
+
+// Fungsi menampilkan daftar task
 async function fetchTasks() {
-    const response = await fetch(API_URL);
-    const tasks = await response.json();
+    const tasks = await getTasksFromDB();
     taskList.innerHTML = ""; // Kosongkan sebelum ditampilkan ulang
 
     tasks.forEach(task => {
         const listItem = document.createElement("li");
         listItem.classList.toggle("checked", task.completed);
 
-        // Checkbox untuk status task
         const checkbox = document.createElement("input");
         checkbox.type = "checkbox";
         checkbox.checked = task.completed;
 
-        // Event listener untuk checkbox
         checkbox.addEventListener("change", () => {
             task.completed = checkbox.checked;
             listItem.classList.toggle("checked", checkbox.checked);
-            saveTaskStatusToLocalStorage(task.id, checkbox.checked);
+            updateTaskStatus(task.id, task.completed);
         });
 
-        // Judul task
         const taskTitle = document.createElement("div");
         taskTitle.classList.add("task-title");
-        taskTitle.innerHTML = task.title || "Judul tidak tersedia";
+        taskTitle.innerHTML = task.title;
 
-        // Informasi tanggal & waktu
         const taskInfo = document.createElement("div");
         taskInfo.classList.add("task-info");
         taskInfo.innerHTML = `<span>${task.date} ${task.time}</span>`;
 
-        // Deskripsi task
         const taskDesc = document.createElement("div");
         taskDesc.classList.add("task-desc");
-        taskDesc.innerHTML = task.desc || "Deskripsi tidak tersedia";
+        taskDesc.innerHTML = task.desc;
 
-        // Membuat tombol hapus (❌)
         const deleteBtn = document.createElement("button");
         deleteBtn.classList.add("delete-task");
         deleteBtn.innerHTML = "❌";
         deleteBtn.onclick = async () => {
-            await deleteTask(task.id);
-            listItem.remove(); // Hapus dari tampilan
+            await deleteTaskFromDB(task.id);
+            listItem.remove();
         };
 
-        // Tambahkan elemen ke dalam list item
         listItem.appendChild(checkbox);
         listItem.appendChild(taskTitle);
         listItem.appendChild(taskInfo);
         listItem.appendChild(taskDesc);
-        listItem.appendChild(deleteBtn); // Tambahkan tombol hapus
+        listItem.appendChild(deleteBtn);
 
         taskList.appendChild(listItem);
-
-        // Set status checkbox dari localStorage
-        const savedStatus = getTaskStatusFromLocalStorage(task.id);
-        if (savedStatus !== null) {
-            checkbox.checked = savedStatus;
-            listItem.classList.toggle("checked", savedStatus);
-        }
     });
 
-    // Terapkan filter berdasarkan pilihan dropdown setelah tasks dimuat
     filterInput.dispatchEvent(new Event("change"));
 }
 
-// Fungsi menambahkan task ke database
+// Fungsi menyimpan status checkbox ke IndexedDB
+async function updateTaskStatus(taskId, status) {
+    const tasks = await getTasksFromDB();
+    const updatedTasks = tasks.map(task => {
+        if (task.id === taskId) {
+            task.completed = status;
+        }
+        return task;
+    });
+
+    const db = await openDatabase();
+    const transaction = db.transaction("tasks", "readwrite");
+    const store = transaction.objectStore("tasks");
+    updatedTasks.forEach(task => store.put(task));
+}
+
+// Fungsi menambahkan task baru ke IndexedDB
 async function submitTask() {
     const title = titleInput.value.trim();
     const date = dateInput.value;
@@ -140,50 +141,76 @@ async function submitTask() {
 
     if (title === "" || date === "" || time === "") return alert("Harap isi semua data!");
 
-    await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, date, time, desc })
-    });
+    const newTask = {
+        title,
+        date,
+        time,
+        desc,
+        completed: false,
+    };
 
+    await addTaskToDB(newTask);
     closeModal();
     fetchTasks(); // Perbarui daftar task
 }
 
-// Fungsi untuk menghapus task dari database
-async function deleteTask(taskId) {
-    await fetch(`${API_URL}/${taskId}`, {
-        method: "DELETE",
+// Fungsi menutup modal & reset input
+function closeModal() {
+    modal.style.display = "none";
+    resetInputs();
+}
+
+function resetInputs() {
+    titleInput.value = "";
+    dateInput.value = "";
+    timeInput.value = "";
+    descInput.value = "";
+}
+
+// Filter task berdasarkan status
+filterInput.addEventListener("change", function () {
+    const filterValue = this.value.toLowerCase();
+    const tasks = document.querySelectorAll("#taskList li");
+
+    tasks.forEach(task => {
+        const isCompleted = task.classList.contains("checked");
+        if (filterValue === "" || (filterValue === "completed" && isCompleted) || (filterValue === "not-completed" && !isCompleted)) {
+            task.style.display = "flex";
+        } else {
+            task.style.display = "none";
+        }
     });
-}
+});
 
-// Fungsi untuk menyimpan status checkbox ke localStorage
-function saveTaskStatusToLocalStorage(taskId, status) {
-    let taskStatus = JSON.parse(localStorage.getItem("taskStatus")) || {};
-    taskStatus[taskId] = status;
-    localStorage.setItem("taskStatus", JSON.stringify(taskStatus));
-}
-
-// Fungsi untuk mengambil status checkbox dari localStorage
-function getTaskStatusFromLocalStorage(taskId) {
-    let taskStatus = JSON.parse(localStorage.getItem("taskStatus")) || {};
-    return taskStatus[taskId];
-}
-
-// Fungsi untuk menyaring task berdasarkan input search bar
-searchInput.addEventListener("input", function() {
+// Fungsi pencarian task
+searchInput.addEventListener("input", function () {
     const searchValue = this.value.toLowerCase();
     const tasks = document.querySelectorAll("#taskList li");
 
     tasks.forEach(task => {
         const title = task.querySelector(".task-title").textContent.toLowerCase();
         if (title.includes(searchValue)) {
-            task.style.display = "flex"; // Tampilkan jika cocok
+            task.style.display = "flex";
         } else {
-            task.style.display = "none"; // Sembunyikan jika tidak cocok
+            task.style.display = "none";
         }
     });
 });
 
-// Jalankan fetchTasks saat halaman pertama kali dimuat
-fetchTasks();
+// Inisialisasi modal
+window.onload = function () {
+    modal.style.display = "none";
+    fetchTasks();
+};
+
+openModalBtn.onclick = function () {
+    modal.style.display = "flex";
+};
+
+closeModalBtn.onclick = closeModal;
+
+window.onclick = function (event) {
+    if (event.target === modal) {
+        closeModal();
+    }
+};
